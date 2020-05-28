@@ -30,19 +30,18 @@
 
 
 # User defined variables - CHANGE THESE:
-file_location <- "C:/FILE/LOCATION"     # set the location of .txt files
-
+file_location <- "C:/FILE_LOCATION"     # set the location of .txt files
 # script should be re-run from here for each .txt file
-file <- "SAMPLEID.txt"     # name of .txt file
-year <- 1949     # start year (inner-most ring year); e.g. 1949 for sample data
+file <- "SAMPLEID.txt"     # name of .txt file (CHANGE FOR EACH TXT FILE)
+year <- 1949     # start year (inner-most ring year); e.g. 1949 for example data (CHANGE AS NEEDED)
 
 ###
 
 # Main script - should not need to change:
 setwd(file_location)     # set directory
 data <- read.table(file)     # read in .txt file
-sample <- substr(file,1,nchar(file)-4)
-newdata <- data.frame("Sample"=sample, "Area"=data$Area, "Year"=NA)     # create new data frame with sample ID and duct areas as well as year as an empty column
+sampleID <- substr(file,1,nchar(file)-4)
+newdata <- data.frame("SampleID"=sampleID, "Area"=data$Area, "Year"=NA)     # create new data frame with sample ID and duct areas as well as year as an empty column
 
 # loops through rows in the dataframe and assigns years to duct area measurements
 for(i in 1:nrow(newdata)){
@@ -58,10 +57,10 @@ for(i in 1:nrow(newdata)){
   }
   if(i != 1 & is.na(newdata$Year[i])==TRUE) {
     newdata$Year[i] <- newdata$Year[i-1]
-    }
+  }
 }
 
-newfile <- paste(sample,"dated.csv", sep="_")     # create new file name
+newfile <- paste(sampleID,"dated.csv", sep="_")     # create new file name
 
 write.csv(newdata, newfile, row.names=FALSE)     # write out new (.csv) file
 
@@ -72,7 +71,7 @@ write.csv(newdata, newfile, row.names=FALSE)     # write out new (.csv) file
 # that will be used for calculating resin duct metrics
 
 # User defined variables - CHANGE THESE:
-file_location <- "C:/FILE/LOCATION"     # set the location of .CSV files
+file_location <- "C:/FILE_LOCATION"     # set the location of .CSV files
 newfile <- "test.csv"     # enter name of new file
 # install.packages("data.table")     # install required packages (IF NECESSARY)
 
@@ -98,7 +97,7 @@ write.csv(all_data, file = newfile, row.names=FALSE)     # write out new file in
 # Duct production: Total number of ducts per annual ring
 
 # User defined variables - CHANGE THESE:
-file_location <- "C:/FILE/LOCATION"     # set the location of CSV file created in previous section
+file_location <- "C:/FILE_LOCATION"     # set the location of CSV file created in previous section
 file2 <- "test.csv"     # name of .csv file created in previous section
 newfile2 <- "unstandardized_metrics.csv"     # name of .csv file that will be created in this section with unstandardized duct metrics
 
@@ -110,8 +109,8 @@ data <- read.csv(file2)     # read in .csv file created in previous section
 data <- subset(data, data[,3] != ".")     # remove breaks between years
 
 # calculates: total duct area (TDA), mean duct size (size), duct production (prod)
-temp_tda <- aggregate(data$Area, by = list("Sample" = data$Sample, "Year" = data$Year), FUN = sum)
-temp_size <- aggregate(data$Area, by = list("Sample" = data$Sample, "Year" = data$Year), FUN = mean)
+temp_tda <- aggregate(data$Area, by = list("SampleID" = data$SampleID, "Year" = data$Year), FUN = sum)
+temp_size <- aggregate(data$Area, by = list("SampleID" = data$SampleID, "Year" = data$Year), FUN = mean)
 
 fun1 <- function(x) {     # counts number of rows, unless a 0 value, which returns 0
   if (x != 0) {
@@ -121,10 +120,10 @@ fun1 <- function(x) {     # counts number of rows, unless a 0 value, which retur
   }
 }
 
-temp_prod <- aggregate(data$Area, by = list("Sample" = data$Sample, "Year" = data$Year), FUN = fun1)
+temp_prod <- aggregate(data$Area, by = list("SampleID" = data$SampleID, "Year" = data$Year), FUN = fun1)
 
 # put all metrics into one data frame; convert TDA and size to mm since ImageJ records in inches
-duct_metrics <- data.frame("Sample" = temp_tda$Sample, "Year" = temp_tda$Year,
+duct_metrics <- data.frame("SampleID" = temp_tda$SampleID, "Year" = temp_tda$Year,
                            "Total_Duct_Area" =  temp_tda$x*645.16, "Duct_Size" = temp_size$x*645.16, "Duct_Production" = temp_prod$x)
 
 write.csv(duct_metrics, newfile2, row.names=FALSE)
@@ -143,7 +142,7 @@ write.csv(duct_metrics, newfile2, row.names=FALSE)
 # unstandardized metrics.
 
 # User defined variables - CHANGE THESE:
-file_location <- "C:/FILE/LOCATION"     # set the location of CSV file containing unstandardized metrics AND corresponding .rwl files
+file_location <- "C:/FILE_LOCATION"     # set the location of CSV file containing unstandardized metrics AND corresponding .rwl files
 file3 <- "unstandardized_metrics.csv"     # name of .csv file created in previous section
 newfile3 <- "all_duct_metrics.csv"     # name of .csv file that will be created in this section with both unstandardized and standardized resin duct metrics
 year_start <- 1949     # first year for which resin ducts were measured (1949 for sample data)
@@ -153,11 +152,13 @@ core_width <- 5     # width in mm of cores (e.g. many increment borers produce 5
 # install.packages("dplR")     # if necessary
 # install.packages("read.table")     # if necessary
 # install.packages("tidyr")     # if necessary
+# install.packages("stringr")     # if necessary
 
 # Main script - should not need to change:
 library(dplR)     # load required packages
 library(data.table)
 library(tidyr)
+library(stringr)
 setwd(file_location)     # set directory
 files <- list.files(pattern="*.rwl")     # pulls file names for all .rwl files within the working directory
 
@@ -165,7 +166,7 @@ files <- list.files(pattern="*.rwl")     # pulls file names for all .rwl files w
 fun2 <- function(x) {
   temp <- read.rwl(x)
   temp <- cbind("Year"=rownames(temp), data.frame(temp, row.names=NULL))
-  new <- pivot_longer(temp, 2:ncol(temp), names_to="Sample", values_to="RW_mm")     # assumes ring widths are in mm
+  new <- pivot_longer(temp, 2:ncol(temp), names_to="SampleID", values_to="RW_mm")     # assumes ring widths are in mm
   return(new)
 }
 
@@ -204,8 +205,8 @@ rda_new <- aggregate(ducts_all$Rel_Duct_Area, by = list("Tree" = ducts_all$Tree,
 
 # new data frame with the aggregated variables:
 ducts_all2 <- data.frame("Tree" = tda_new$Tree, "Year" = tda_new$Year,
-"Total_Duct_Area" =  tda_new$x, "Duct_Size" = size_new$x, "Duct_Production" = prod_new$x,
-"RW_mm" = rw_new$x, "Ring_Area_mm2" = ring_area_new$x, "Rel_Duct_Area" = rda_new$x)
+                         "Total_Duct_Area" =  tda_new$x, "Duct_Size" = size_new$x, "Duct_Production" = prod_new$x,
+                         "RW_mm" = rw_new$x, "Ring_Area_mm2" = ring_area_new$x, "Rel_Duct_Area" = rda_new$x)
 
 ducts_all2$Duct_Density <- ducts_all2$Duct_Production/ducts_all2$Ring_Area_mm2     # calculate duct density and add to dataframe
 
