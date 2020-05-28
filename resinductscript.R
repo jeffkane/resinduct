@@ -1,12 +1,10 @@
-#R Script: “ResinDucts_datareduction”
-
 #### Resin Duct data processing ####
 
-# This code will take .txt files built from the measurement of resin ducts in ImageJ (https://imagej.nih.gov/ij/)
-# and process them so that the final output will be a .csv file containing 5 resin duct metrics
+# This code will take TXT files built from the measurement of resin ducts in ImageJ (https://imagej.nih.gov/ij/)
+# and process them so that the final output will be a CSV file containing 5 resin duct metrics
 # corresponding to calendar years in which the ducts were formed. It is assumed that RWL files of
 # ring widths have previously been created using standard dendrochronological techniques and that
-# sample IDs match those of .txt file names.
+# sample IDs match those of TXT file names.
 # For further detail, refer to the associated paper (Hood et al., in prep).
 
 # There are FOUR individual sections that follow. Each can be run separately but may require a file type
@@ -14,7 +12,7 @@
 
 # The sections are as follows:
 # 1. ADDING YEARS TO RESIN DUCT METRICS - add years to resin ducts measured in ImageJ following protocol in Hood et al., in prep
-# 2. COMBINING INDIVIDUAL .CSV FILES INTO ONE FILE - combines all .csv files created in previous section into one file with all trees of interest
+# 2. COMBINING INDIVIDUAL CSV FILES INTO ONE FILE - combines all .csv files created in previous section into one file with all trees of interest
 # 3. CALCULATING UNSTANDARDIZED DUCT METRICS - calculates resin duct metrics that have not been standardized by ring area
 # 4. CALCULATING STANDARDIZED DUCT METRICS - uses data from unstandardized metrics created in previous section combined with existing .rwl files to calculate resin duct metrics standardized by ring area
 
@@ -36,7 +34,7 @@ file_location <- "C:/FILE/LOCATION"     # set the location of .txt files
 
 # script should be re-run from here for each .txt file
 file <- "SAMPLEID.txt"     # name of .txt file
-year <- 1900     # start year (inner-most ring year)
+year <- 1949     # start year (inner-most ring year); e.g. 1949 for sample data
 
 ###
 
@@ -60,7 +58,7 @@ for(i in 1:nrow(newdata)){
   }
   if(i != 1 & is.na(newdata$Year[i])==TRUE) {
     newdata$Year[i] <- newdata$Year[i-1]
-  }
+    }
 }
 
 newfile <- paste(sample,"dated.csv", sep="_")     # create new file name
@@ -148,9 +146,9 @@ write.csv(duct_metrics, newfile2, row.names=FALSE)
 file_location <- "C:/FILE/LOCATION"     # set the location of CSV file containing unstandardized metrics AND corresponding .rwl files
 file3 <- "unstandardized_metrics.csv"     # name of .csv file created in previous section
 newfile3 <- "all_duct_metrics.csv"     # name of .csv file that will be created in this section with both unstandardized and standardized resin duct metrics
-year_start <- 1900     # first year for which resin ducts were measured
-year_end <- 1950     # last year for which resin ducts were measured
-core_width <- 5     # width in mm of cores (e.g. many increment borers product 5 mm cores)
+year_start <- 1949     # first year for which resin ducts were measured (1949 for sample data)
+year_end <- 1961     # last year for which resin ducts were measured (1961 for sample data)
+core_width <- 5     # width in mm of cores (e.g. many increment borers produce 5 mm cores)
 
 # install.packages("dplR")     # if necessary
 # install.packages("read.table")     # if necessary
@@ -182,5 +180,35 @@ ducts_all$Rel_Duct_Area <- (ducts_all$Total_Duct_Area/ducts_all$Ring_Area_mm2)*1
 ducts_all$Duct_Density <- ducts_all$Duct_Production/ducts_all$Ring_Area_mm2     # calculates duct density
 
 write.csv(ducts_all, newfile3, row.names=FALSE)     # write out final file containing 5 resin duct metrics as well as corresponding ring widths (mm) and ring areas (mm^2)
+
+### 4.1 - OPTIONAL - if multiple samples per tree (e.g. see example data) ###
+# This subsection will combine data from multiple cores per tree (e.g. A and B cores).
+# Core area is summed for all samples from one tree, and duct area and number is
+# summed as well. Mean duct size is the average of the multiple cores.
+# IMPORTANT NOTE: this script assumes that the character denoting the core (e.g. A or B)
+# falls at the END of the sampleID character string (e.g. see example data).
+
+# User defined:
+newfile4 <- "all_duct_metrics2.csv"     # name of .csv file to be output
+
+# Main script:
+ducts_all$Tree <- str_sub(ducts_all$SampleID, 1, str_length(ducts_all$SampleID)-1)     # add "tree" column based on sample ID; assumes last character in sample ID corresponds to the core (e.g. A or B)
+
+# Aggregate the resin duct metrics by tree
+tda_new <- aggregate(ducts_all$Total_Duct_Area, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
+size_new <- aggregate(ducts_all$Duct_Size, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = mean)
+prod_new <- aggregate(ducts_all$Duct_Production, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
+rw_new <- aggregate(ducts_all$RW_mm, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = mean)
+ring_area_new <- aggregate(ducts_all$Ring_Area_mm2, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
+rda_new <- aggregate(ducts_all$Rel_Duct_Area, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
+
+# new data frame with the aggregated variables:
+ducts_all2 <- data.frame("Tree" = tda_new$Tree, "Year" = tda_new$Year,
+"Total_Duct_Area" =  tda_new$x, "Duct_Size" = size_new$x, "Duct_Production" = prod_new$x,
+"RW_mm" = rw_new$x, "Ring_Area_mm2" = ring_area_new$x, "Rel_Duct_Area" = rda_new$x)
+
+ducts_all2$Duct_Density <- ducts_all2$Duct_Production/ducts_all2$Ring_Area_mm2     # calculate duct density and add to dataframe
+
+write.csv(ducts_all2, newfile4, row.names=FALSE)     # write out final file containing 5 resin duct metrics as well as corresponding mean ring widths (mm) and ring areas (mm^2)
 
 ##########################################################################################################################################################################
