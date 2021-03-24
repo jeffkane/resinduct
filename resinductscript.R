@@ -126,10 +126,17 @@ temp_prod <- aggregate(data$Area, by = list("SampleID" = data$SampleID, "Year" =
 duct_metrics <- data.frame("SampleID" = temp_tda$SampleID, "Year" = temp_tda$Year,
                            "Total_Duct_Area" =  temp_tda$x*645.16, "Duct_Size" = temp_size$x*645.16, "Duct_Production" = temp_prod$x)
 
+# if no ducts were produced in the sampled portion of the ring, then a duct size of 0 would
+# falsely decrease average resin duct size because almost surely ducts exist elsewhere in the ring,
+# therefore duct size cannot be 0 and is replaced with NA:
+duct_metrics$Duct_Size[duct_metrics$Duct_Size==0] <- NA
+
 write.csv(duct_metrics, newfile2, row.names=FALSE)
 
 ### NOTE: The metrics calculated above are UNSTANDARDIZED, i.e. they have not been standardized by
-# ring area. The following section includes the code for calculating standardized metrics given that the
+# ring area. One result of this is that rings with ring width = 0 will not be differentiable from
+# rings with 0 ducts (i.e. both will be shown as having 0 area). 
+# The following section includes the code for calculating standardized metrics given that the
 # width of the core is known and a ring width file (.rwl) containing the same sample IDs exists.
 
 #####################################################################################
@@ -180,6 +187,10 @@ ducts_all$Ring_Area_mm2 <- ducts_all$RW_mm * core_width     # calculates ring ar
 ducts_all$Rel_Duct_Area <- (ducts_all$Total_Duct_Area/ducts_all$Ring_Area_mm2)*100     # calculates relative duct area
 ducts_all$Duct_Density <- ducts_all$Duct_Production/ducts_all$Ring_Area_mm2     # calculates duct density
 
+# if ring width is 0, then all duct variables are NA:
+ducts_all$Total_Duct_Area <- ifelse(ducts_all$RW_mm == 0, NA, ducts_all$Total_Duct_Area)
+ducts_all$Duct_Production <- ifelse(ducts_all$RW_mm == 0, NA, ducts_all$Duct_Production)
+
 write.csv(ducts_all, newfile3, row.names=FALSE)     # write out final file containing 5 resin duct metrics as well as corresponding ring widths (mm) and ring areas (mm^2)
 
 ### 4.1 - OPTIONAL - if multiple samples per tree (e.g. see example data) ###
@@ -196,12 +207,12 @@ newfile4 <- "all_duct_metrics2.csv"     # name of .csv file to be output
 ducts_all$Tree <- str_sub(ducts_all$SampleID, 1, str_length(ducts_all$SampleID)-1)     # add "tree" column based on sample ID; assumes last character in sample ID corresponds to the core (e.g. A or B)
 
 # Aggregate the resin duct metrics by tree
-tda_new <- aggregate(ducts_all$Total_Duct_Area, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
-size_new <- aggregate(ducts_all$Duct_Size, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = mean)
-prod_new <- aggregate(ducts_all$Duct_Production, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
-rw_new <- aggregate(ducts_all$RW_mm, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = mean)
-ring_area_new <- aggregate(ducts_all$Ring_Area_mm2, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
-rda_new <- aggregate(ducts_all$Rel_Duct_Area, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum)
+tda_new <- aggregate(ducts_all$Total_Duct_Area, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum, na.rm=TRUE)
+size_new <- aggregate(ducts_all$Duct_Size, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = mean, na.rm=TRUE)
+prod_new <- aggregate(ducts_all$Duct_Production, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum, na.rm=TRUE)
+rw_new <- aggregate(ducts_all$RW_mm, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = mean, na.rm=TRUE)
+ring_area_new <- aggregate(ducts_all$Ring_Area_mm2, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum, na.rm=TRUE)
+rda_new <- aggregate(ducts_all$Rel_Duct_Area, by = list("Tree" = ducts_all$Tree, "Year" = ducts_all$Year), FUN = sum, na.rm=TRUE)
 
 # new data frame with the aggregated variables:
 ducts_all2 <- data.frame("Tree" = tda_new$Tree, "Year" = tda_new$Year,
