@@ -10,7 +10,7 @@ resinductscript_sw.R quantifies axial resin ducts by seasonwood and calendar yea
 ## Getting Started
 To quantify ducts by calendar year: Copy script from resinductscript.R into new R script. If using the example duct measurement (TXT) and ring width (RWL) files, save these as .txt and .rwl files, respectively, to your working directory. Ensure that file names for TXT and RWL files are as listed in the repository (e.g. SNF117La.rwl). Associated files: resinductscript.R, SNF117La.rwl, SNF117La.txt, SNF117Lb.rwl, SNF117Lb.txt, SNF383La.rwl, SNF383La.txt.
 
-To quantify ducts by seasonwood and calendar year: Copy script from resinductscript_sw.R and functions.R into new R scripts. If using the example duct measurement (TXT) and ring width (CSV) files, save these as .txt and .csv files, respectively, to your working directory. Ensure that file names for TXT and CSV files are as listed in the repository (e.g. CT002.txt). Associated files: resinductscript_sw.R, functions.R, CT002.txt, CT163.txt, LickCreek_tree_ring_data.csv.
+To quantify ducts by seasonwood and calendar year: Copy script from resinductscript_sw.R and functions.R into new R scripts. If using the example duct measurement (TXT) and ring width (CSV) files, save these as .txt and .csv files, respectively, to your working directory. Ensure that file names for TXT and CSV files are as listed in the repository (e.g. CT002.txt). Associated files: resinductscript_sw.R, functions.R, CT002.txt, CT163.txt, seasonwood_ringwidths.csv.
     
 ### Prerequisites
 R statistical software (https://www.r-project.org/)
