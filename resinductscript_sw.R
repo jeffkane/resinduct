@@ -73,13 +73,13 @@ source(paste0(function_location, "functions.R"))
 
 #'** User defined variables - CHANGE THESE: **
 #'
-# Data frame with core file name and years with missing rings
-filesMR <- data.frame(File = c("CT163.txt", "CT143.txt", "CT195.txt", "CT195.txt", "SW184.txt", "SW020.txt", "SW159.txt", "SW160.txt", "SW140.txt", "SW140.txt"),
-                      Year = c(1994, 1973, 2001, 2010, 1991, 1994, 1989, 1989, 2001, 2013))
+# Data frame with core file name and years with missing rings (only need to list cores that have missing rings here)
+filesMR <- data.frame(File = c("CT163.txt"),
+                      Year = c(1994)) 
 
 # Input and output directories and files
 files_input  <- "resin_ducts/imagej/"      # set the location of imagej .txt files
-outputTemp   <- "resin_ducts/dated/temp/"  # set the location of temporal files (useful to find errors)
+outputTemp   <- "resin_ducts/dated/temp/"  # set the location of temporal files (useful to find errors) #which file is this?
 files_output <- "resin_ducts/dated/"       # set the location of output files
 
 # First and last year measured
@@ -249,16 +249,49 @@ write.table(metrics_all, paste0(files_output, newfile2), row.names = FALSE)
 #' unstandardized metrics.
 #' 
 #' 
-#' NOTE: If ring width is in .rwl file, continue Section 4 of original script
+#' NOTE: if ring width measurements are in .rwl files you will need to run section 4.1 first (otherwise skip to 4.2):
+#' You will need three .rwl files to run section 4.1: an earlywood file, a latewood file, and a total ring width file
+#' 4.1
+#' #'** User defined variables - CHANGE THESE: **
+#'
+# Input and output directories and files
+EW_file         <- "EW.rwl"        #earlywood .rwl file name
+LW_file         <- "LW.rwl"        #latewood .rwl file name
+RW_file         <- "RW.rwl"        #ring width .rwl file name
+newfile3        <- "seasonwood_ringwidths.csv"         # name of file that will be created in this section with both unstandardized and standardized resin duct metrics
+files_output    <- "resin_ducts/"                  # set the location of output file
 
+# reads in .rwl files, adds years as a column, and pivots the dataframe to long format (sample and ring width as columns):
+if(!require(dplR)){install.packages("dplR")}
+if(!require(tidyr)){install.packages("tidyr")}
+
+earlywood <- read.rwl(EW_file)
+earlywood <-  cbind("year"=rownames(earlywood), data.frame(earlywood, row.names=NULL))
+earlywood <- pivot_longer(earlywood, 2:ncol(earlywood), names_to="coreNum", values_to="ew") 
+
+latewood <- read.rwl(LW_file)
+latewood <- cbind("year"=rownames(latewood), data.frame(latewood, row.names=NULL))
+latewood <- pivot_longer(latewood, 2:ncol(latewood), names_to="coreNum", values_to="lw") 
+
+ringwidth <- read.rwl(RW_file)
+ringwidth <- cbind("year"=rownames(ringwidth), data.frame(ringwidth, row.names=NULL))
+ringwidth <- pivot_longer(ringwidth, 2:ncol(ringwidth), names_to="coreNum", values_to="rw") 
+
+seasonwood <- data.frame("coreNum"=ringwidth$coreNum, "year"=ringwidth$year,
+                    "rw"=ringwidth$rw, "ew"=earlywood$ew, "lw"=latewood$lw)
+seasonwood$year <- as.numeric(as.character(seasonwood$year))     # make sure year is numeric
+
+write.csv(seasonwood, newfile3, row.names=FALSE)
+
+#' 4.2
 #'** User defined variables - CHANGE THESE: **
 #'
 # Input and output directories and files
 files_input     <- "resin_ducts/"                 # set the location of file containing unstandardized metrics
 file3           <- "unstandardized_metrics.txt"   # name of file created in previous section
-newfile3        <- "all_duct_metrics.txt"         # name of file that will be created in this section with both unstandardized and standardized resin duct metrics
+newfile4        <- "all_duct_metrics.txt"         # name of file that will be created in this section with both unstandardized and standardized resin duct metrics
 files_output    <- "resin_ducts/"                 # set the location of output file
-files_ringwidth <- "LickCreek_tree_ring_data_LV.csv"    # set .csv file containing ring width measurements
+files_ringwidth <- "seasonwood_ringwidths.csv"    # set .csv file containing ring width measurements
 
 # First and last year of measurements and core width
 year_start <- 1969    # first year for which resin ducts were measured 
@@ -268,7 +301,7 @@ core_width <- 5.15    # width in mm of cores
 # Name of columns of ring width file
 yearColumn <- "year"    # name of the column in files_ringwidth that contains Years
 sampleID   <- "coreNum" # name of the column in files_ringwidth that contains core ID
-selectCols <- c("coreNum", "year", "rw.b", "ew.b", "lw.b")   # name of the columns of interest (core ID, Year, ring width measurement, earlywood width, latewood width)
+selectCols <- c("coreNum", "year", "rw", "ew", "lw")   # name of the columns of interest (core ID, Year, ring width measurement, earlywood width, latewood width)
 #' NOTE: selectCols object should be same length and same order, if not, change it
 
 
@@ -315,6 +348,6 @@ ducts_all$Duct_Density.rw[ducts_all$MR == "Y"] <- 0
 
 
 
-write.table(ducts_all, paste0(files_output, newfile3), row.names = FALSE)   
+write.table(ducts_all, paste0(files_output, newfile4), row.names = FALSE)   
 
 #'#########################################################################################################################################################################
