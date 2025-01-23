@@ -11,7 +11,7 @@
 # output from a previous section. Each section should be run in its entirety for best results. 
 
 # The sections are as follows:
-# 1. ADDING YEARS TO RESIN DUCT METRICS - add years to resin ducts measured in ImageJ following protocol in Hood et al., in prep
+# 1. ADDING YEARS TO RESIN DUCT METRICS - add years to resin ducts measured in ImageJ following protocol in Hood, S. M., C. C. Reed, and J. M. Kane. 2020. Axial resin duct quantification in tree rings: A functional defense trait. MethodsX 7:101035.
 # 2. COMBINING INDIVIDUAL CSV FILES INTO ONE FILE - combines all .csv files created in previous section into one file with all trees of interest
 # 3. CALCULATING UNSTANDARDIZED DUCT METRICS - calculates resin duct metrics that have not been standardized by ring area
 # 4. CALCULATING STANDARDIZED DUCT METRICS - uses data from unstandardized metrics created in previous section combined with existing .rwl files to calculate resin duct metrics standardized by ring area
